@@ -30,3 +30,4 @@ filtered_df.to_csv('filtered-sales-data.csv', index=False)
 print(filtered_df.head())
 
 len(df),len(filtered_df)
+

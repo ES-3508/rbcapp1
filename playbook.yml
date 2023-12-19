@@ -1,0 +1,44 @@
+---
+- name: Monitor Services and Disk Space
+  hosts: web
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Verify or Install Services
+      when: action == "verify_install"
+      package:
+        name: "{{ httpd_service }}"
+        state: present
+
+    - name: Check Disk Space
+      when: action == "check-disk"
+      shell: df -h | awk '{ if ($5 > 80) print $0 }'
+      register: disk_space_result
+      ignore_errors: true
+
+    - name: Send Email Alert for High Disk Usage
+      when: disk_space_result.rc == 0 and action == "check-disk"
+      mail:
+        to: your_email@example.com
+        subject: "High Disk Usage Alert"
+        body: "{{ disk_space_result.stdout_lines | join('\n') }}"
+        from: ansible@example.com
+        transport: smtp
+        server: smtp.example.com
+        port: 587
+        username: your_smtp_username
+        password: your_smtp_password
+        starttls: yes
+
+    - name: Check Application Status and Down Services
+      when: action == "check-status"
+      uri:
+        url: "https://myservice.example.com/healthcheck"
+        method: GET
+        return_content: yes
+      register: healthcheck_result
+
+    - name: Print Application Status and Down Services
+      when: action == "check-status"
+      debug:
+        var: healthcheck_result.json
